@@ -1,0 +1,88 @@
+version: "3.9"
+
+# Donastag Engineering OS — Node baseline (Phase 0 + Phase 1)
+# Deployed via Coolify, watching the `main` branch of this repo.
+# Coolify manages its own Traefik/reverse-proxy layer — not defined here.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      # POSTGRES_USER / POSTGRES_DB just need a name, no secrecy needed, so a default is fine.
+      # POSTGRES_PASSWORD uses Coolify's magic var: it auto-generates a random password
+      # and stores/displays it in the Environment Variables tab. Nothing to fill in by hand.
+      POSTGRES_USER: ${POSTGRES_USER:-donastag}
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
+      POSTGRES_DB: ${POSTGRES_DB:-donastag}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-donastag} -d ${POSTGRES_DB:-donastag}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Same magic-variable pattern for Redis's password.
+    command: ["redis-server", "--requirepass", "${SERVICE_PASSWORD_REDIS}"]
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${SERVICE_PASSWORD_REDIS}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    environment:
+      # N8N_HOST needs your VM's actual IP or domain - the only field you still set yourself.
+      N8N_HOST: ${N8N_HOST:-192.168.3.211}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: https
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_DATABASE: ${POSTGRES_DB:-donastag}
+      DB_POSTGRESDB_USER: ${POSTGRES_USER:-donastag}
+      # Reuses the exact same generated password as the postgres service above -
+      # Coolify guarantees SERVICE_PASSWORD_POSTGRES is identical everywhere it's referenced.
+      DB_POSTGRESDB_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
+      # Auto-generated 64-char base64 string, used as n8n's encryption key.
+      N8N_ENCRYPTION_KEY: ${SERVICE_REALBASE64_64_N8N}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    ports:
+      - "5678:5678"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ai_router:
+    build: ./src/ai_router
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-donastag}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=${POSTGRES_DB:-donastag}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+  n8n_data:
