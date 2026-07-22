@@ -111,6 +111,51 @@ services:
       ai_router:
         condition: service_started
 
+  verification_engine:
+    build: ./src/verification_engine
+    restart: unless-stopped
+    ports:
+      - "8003:8000"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-donastag}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=${POSTGRES_DB:-donastag}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  security_engine:
+    build: ./src/security_engine
+    restart: unless-stopped
+    ports:
+      - "8004:8000"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-donastag}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=${POSTGRES_DB:-donastag}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  monitoring:
+    build: ./src/monitoring
+    restart: unless-stopped
+    ports:
+      - "8005:8000"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-donastag}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=${POSTGRES_DB:-donastag}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   studio:
     build: ./EID
     restart: unless-stopped
@@ -119,9 +164,15 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=http://192.168.3.211:8002
       - NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=Eid007bot
+      - VERIFICATION_URL=http://verification_engine:8000
+      - SECURITY_URL=http://security_engine:8000
+      - MONITORING_URL=http://monitoring:8000
     depends_on:
       - director
       - ai_router
+      - verification_engine
+      - security_engine
+      - monitoring
 
 volumes:
   postgres_data:
