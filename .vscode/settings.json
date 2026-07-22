@@ -1,0 +1,4 @@
+{
+  "deepscan.enable": true,
+  "editor.codeActions.triggerOnFocusChange": true
+}
