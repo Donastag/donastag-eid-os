@@ -193,19 +193,15 @@ async def _proxy_forward(request: Request, path: str):
 
         logger.info(f"Proxying {request.method} /{path} to provider: {selected_provider['name']}")
 
-        headers = dict(request.headers)
-        headers.pop("host", None)
+        headers = {
+            "Content-Type": request.headers.get("Content-Type", "application/json"),
+        }
 
         if selected_provider["name"] == "claude-api":
             api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
             if api_key:
                 headers["x-api-key"] = api_key
-
                 headers["anthropic-version"] = "2023-06-30"
-        elif selected_provider["name"] == "openai":
-            api_key = os.getenv("OPENAI_API_KEY")
-            if api_key:
-                headers["Authorization"] = f"Bearer {api_key}"
         elif selected_provider["name"] == "openai":
             api_key = os.getenv("OPENAI_API_KEY")
             if api_key:
