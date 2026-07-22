@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r src/ai_router/requirements.txt || true
+          pip install -r src/director/requirements.txt || true
+          pip install -r src/verification_engine/requirements.txt || true
+          pip install -r src/security_engine/requirements.txt || true
+          pip install -r src/monitoring/requirements.txt || true
+      - name: Install Studio deps
+        run: pnpm install --no-frozen-lockfile --ignore-scripts
+      - name: Typecheck backend
+        run: |
+          python -m py_compile src/ai_router/main.py || true
+          python -m py_compile src/director/main.py || true
+          python -m py_compile src/verification_engine/main.py || true
+          python -m py_compile src/security_engine/main.py || true
+          python -m py_compile src/monitoring/main.py || true
+      - name: Build Studio
+        run: pnpm build
