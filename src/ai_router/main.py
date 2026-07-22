@@ -66,6 +66,15 @@ async def get_active_ai_providers():
         })
     return providers
 
+
+def select_provider(providers):
+    default = os.getenv("DEFAULT_PROVIDER")
+    if default:
+        for provider in providers:
+            if provider["name"] == default:
+                return provider
+    return providers[0] if providers else None
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize on startup"""
@@ -102,8 +111,9 @@ async def list_providers():
 async def route_info():
     """Return the selected provider for the current registration state."""
     providers = await get_active_ai_providers()
+    selected = select_provider(providers)
     return {
-        "selected": providers[0] if providers else None,
+        "selected": selected,
         "available": providers,
     }
 
@@ -124,9 +134,11 @@ async def chat_completions(request: Request):
         if not providers:
             raise HTTPException(status_code=503, detail="No AI providers available")
         
-        # For now, just use the first provider (alphabetically sorted by name)
+        # For now, just use the selected provider
         # In future versions, this could implement load balancing, failover, etc.
-        selected_provider = providers[0]
+        selected_provider = select_provider(providers)
+        if not selected_provider:
+            raise HTTPException(status_code=503, detail="No AI providers available")
         logger.info(f"Routing request to provider: {selected_provider['name']}")
         
         # Prepare headers for the target API
@@ -134,15 +146,15 @@ async def chat_completions(request: Request):
             "Content-Type": "application/json",
         }
         
-        # Add authorization if needed (this would vary by provider)
-        # For Anthropic/Claude, we'd use the secret_ref to get the API key from environment
         if selected_provider["name"] == "claude-api":
             api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
             if api_key:
                 headers["x-api-key"] = api_key
                 headers["anthropic-version"] = "2023-06-01"
-        
-        # Forward the request to the provider
+        elif selected_provider["name"] == "openai":
+            api_key = os.getenv("OPENAI_API_KEY")
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
                 selected_provider["endpoint"],
@@ -175,7 +187,10 @@ async def _proxy_forward(request: Request, path: str):
         if not providers:
             raise HTTPException(status_code=503, detail="No AI providers available")
 
-        selected_provider = providers[0]
+        selected_provider = select_provider(providers)
+        if not selected_provider:
+            raise HTTPException(status_code=503, detail="No AI providers available")
+
         logger.info(f"Proxying {request.method} /{path} to provider: {selected_provider['name']}")
 
         headers = dict(request.headers)
@@ -185,7 +200,16 @@ async def _proxy_forward(request: Request, path: str):
             api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
             if api_key:
                 headers["x-api-key"] = api_key
+
                 headers["anthropic-version"] = "2023-06-30"
+        elif selected_provider["name"] == "openai":
+            api_key = os.getenv("OPENAI_API_KEY")
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+        elif selected_provider["name"] == "openai":
+            api_key = os.getenv("OPENAI_API_KEY")
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
 
         target_url = selected_provider["endpoint"].rstrip("/") + "/" + path.lstrip("/")
         async with httpx.AsyncClient(timeout=60.0) as client:
