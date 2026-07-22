@@ -11,7 +11,7 @@ import asyncio
 import asyncpg
 import httpx
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 
 # Configure logging
@@ -98,6 +98,15 @@ async def list_providers():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/route")
+async def route_info():
+    """Return the selected provider for the current registration state."""
+    providers = await get_active_ai_providers()
+    return {
+        "selected": providers[0] if providers else None,
+        "available": providers,
+    }
+
 @app.post("/v1/chat/completions")
 @app.post("/chat/completions")
 async def chat_completions(request: Request):
@@ -156,54 +165,54 @@ async def chat_completions(request: Request):
         logger.error(f"Unexpected error in chat_completions: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Catch-all for other endpoints (for compatibility with OpenAI API)
-@app.api_route("/{path:full}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
-async def proxy_all(request: Request, path: str):
-    """Proxy all other endpoints to the selected AI provider"""
+async def _proxy_forward(request: Request, path: str):
+    """Forward supported requests to an active AI provider, with safe fallbacks."""
     try:
         body = await request.body() if request.method in ["POST", "PUT", "PATCH"] else None
         query_params = str(request.url.query) if request.url.query else ""
-        
-        # Get active providers
+
         providers = await get_active_ai_providers()
-        
         if not providers:
             raise HTTPException(status_code=503, detail="No AI providers available")
-        
+
         selected_provider = providers[0]
         logger.info(f"Proxying {request.method} /{path} to provider: {selected_provider['name']}")
-        
-        # Prepare headers
+
         headers = dict(request.headers)
-        headers["host"] = ""  # Let httpx set the correct host
-        
-        # Add authorization for Claude API
+        headers.pop("host", None)
+
         if selected_provider["name"] == "claude-api":
             api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
             if api_key:
                 headers["x-api-key"] = api_key
-                headers["anthropic-version"] = "2023-06-01"
-        
-        # Forward the request
+                headers["anthropic-version"] = "2023-06-30"
+
+        target_url = selected_provider["endpoint"].rstrip("/") + "/" + path.lstrip("/")
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.request(
                 method=request.method,
-                url=f"{selected_provider['endpoint']}/{path}",
+                url=target_url,
                 content=body,
                 headers=headers,
-                params=query_params
+                params=query_params or None,
             )
-            
-        # Return the response
+
         return Response(
             content=response.content,
             status_code=response.status_code,
-            headers=dict(response.headers)
+            headers=dict(response.headers),
         )
-        
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error in proxy_all: {e}")
+        logger.error(f"Error in _proxy_forward/{path}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_path(request: Request, path: str):
+    return await _proxy_forward(request, path)
+
 
 if __name__ == "__main__":
     import uvicorn

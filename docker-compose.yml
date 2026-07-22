@@ -71,7 +71,7 @@ services:
     build: ./src/ai_router
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-donastag}
       - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
@@ -81,6 +81,33 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+  telegram_concierge:
+    build: ./src/telegram_concierge
+    restart: unless-stopped
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - AI_ROUTER_URL=http://ai_router:8000
+    depends_on:
+      - ai_router
+
+  director:
+    build: ./src/director
+    restart: unless-stopped
+    ports:
+      - "8002:8000"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-donastag}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=${POSTGRES_DB:-donastag}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - AI_ROUTER_URL=http://ai_router:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai_router:
+        condition: service_started
 
 volumes:
   postgres_data:
