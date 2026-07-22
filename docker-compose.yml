@@ -111,6 +111,18 @@ services:
       ai_router:
         condition: service_started
 
+  studio:
+    build: ./EID
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://192.168.3.211:8002
+      - NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=Eid007bot
+    depends_on:
+      - director
+      - ai_router
+
 volumes:
   postgres_data:
   redis_data:
