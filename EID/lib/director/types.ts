@@ -27,3 +27,11 @@ export interface DirectorRequest {
 export interface DirectorRequestsResponse {
   requests: DirectorRequest[]
 }
+
+export interface DirectorDirectResponse {
+  capability?: string
+  action?: string
+  allowed: boolean
+  reason?: string
+  response?: string
+}

@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Send, Zap, MessageCircle, Loader2 } from 'lucide-react'
+import { Send, Zap, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { postDirectorDirect, type DirectorDirectResponse } from '@/lib/director/client'
 
 interface Message {
   id: string
@@ -16,7 +17,7 @@ export function AIDirector() {
     {
       id: '1',
       role: 'assistant',
-      content: 'Hello! I\'m your Engineering Director AI. I can help you manage workflows, debug infrastructure issues, optimize deployments, and answer engineering questions. What can I assist with today?',
+      content: "Hello! I'm your Engineering Director AI. Ask me anything and I'll route it through the kernel.",
       timestamp: new Date(),
     },
   ])
@@ -37,18 +38,26 @@ export function AIDirector() {
     setInput('')
     setIsLoading(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
-    const assistantMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      role: 'assistant',
-      content: `I've analyzed your request: "${input}". Here are my recommendations:\n\n• Action Item 1: Optimize database indexes\n• Action Item 2: Review deployment logs\n• Action Item 3: Update team documentation\n\nWould you like me to elaborate on any of these?`,
-      timestamp: new Date(),
+    try {
+      const data: DirectorDirectResponse = await postDirectorDirect(input)
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: data.response || `Allowed: ${String(data.allowed)}. Reason: ${data.reason || 'none'}`,
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, assistantMessage])
+    } catch (error) {
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, assistantMessage])
+    } finally {
+      setIsLoading(false)
     }
-
-    setMessages((prev) => [...prev, assistantMessage])
-    setIsLoading(false)
   }
 
   return (
@@ -107,7 +116,7 @@ export function AIDirector() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Ask me anything about your infrastructure..."
             className="flex-1 px-3 py-2 bg-neutral-900/50 border border-white/8 rounded-lg text-sm text-foreground placeholder-neutral-500 focus-visible:outline-none focus-visible:border-accent-primary transition-colors"
           />
