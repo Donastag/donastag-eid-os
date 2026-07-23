@@ -22,6 +22,8 @@ import {
   ChevronDown,
   MessageCircle,
   Inbox,
+  Users,
+  Activity,
 } from 'lucide-react'
 
 interface MenuItem {
@@ -45,6 +47,7 @@ const menuItems: MenuItem[] = [
       { id: 'router', label: 'AI Router', icon: <Network className="w-4 h-4" />, path: '/router' },
       { id: 'workflow', label: 'Workflows', icon: <Workflow className="w-4 h-4" />, path: '/workflow' },
       { id: 'assets', label: 'Asset Library', icon: <Layers className="w-4 h-4" />, path: '/assets' },
+      { id: 'collaboration', label: 'Collaboration', icon: <Users className="w-4 h-4" />, path: '/collaboration' },
     ],
   },
   {
@@ -64,6 +67,7 @@ const menuItems: MenuItem[] = [
     icon: <BookOpen className="w-4 h-4" />,
     children: [
       { id: 'graph', label: 'Knowledge Graph', icon: <Code2 className="w-4 h-4" />, path: '/graph' },
+      { id: 'journal', label: 'Engineering Journal', icon: <BookOpen className="w-4 h-4" />, path: '/journal' },
     ],
   },
   {
@@ -74,6 +78,16 @@ const menuItems: MenuItem[] = [
       { id: 'security', label: 'Security', icon: <Shield className="w-4 h-4" />, path: '/security' },
       { id: 'marketplace', label: 'Marketplace', icon: <Layers className="w-4 h-4" />, path: '/marketplace' },
       { id: 'compliance', label: 'Compliance', icon: <AlertCircle className="w-4 h-4" />, path: '/compliance' },
+      { id: 'expert', label: 'Expert System', icon: <Code2 className="w-4 h-4" />, path: '/expert' },
+    ],
+  },
+  {
+    id: 'insights',
+    label: 'Insights',
+    icon: <BarChart3 className="w-4 h-4" />,
+    children: [
+      { id: 'score', label: 'Engineering Score', icon: <BarChart3 className="w-4 h-4" />, path: '/score' },
+      { id: 'fitness', label: 'Architecture Fitness', icon: <Activity className="w-4 h-4" />, path: '/fitness' },
     ],
   },
   { id: 'settings', label: 'Settings', icon: <Settings className="w-4 h-4" />, path: '/settings' },

@@ -90,8 +90,20 @@ services:
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - AI_ROUTER_URL=http://ai_router:8000
+      - VERIFICATION_URL=http://verification_engine:8000
+      - SECURITY_URL=http://security_engine:8000
+      - MONITORING_URL=http://monitoring:8000
+      - INBOX_URL=http://inbox:8000
+      - WORKFLOW_URL=http://workflow:8000
+      - JOURNAL_URL=http://journal:8000
     depends_on:
       - ai_router
+      - verification_engine
+      - security_engine
+      - monitoring
+      - inbox
+      - workflow
+      - journal
 
   director:
     build: ./src/director
@@ -246,6 +258,66 @@ services:
       postgres:
         condition: service_healthy
 
+  asset_evolution:
+    build: ./src/asset_evolution
+    restart: unless-stopped
+    ports:
+      - "8012:8000"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-donastag}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=${POSTGRES_DB:-donastag}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  collaboration:
+    build: ./src/collaboration
+    restart: unless-stopped
+    ports:
+      - "8013:8000"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-donastag}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=${POSTGRES_DB:-donastag}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  marketplace:
+    build: ./src/marketplace
+    restart: unless-stopped
+    ports:
+      - "8014:8000"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-donastag}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=${POSTGRES_DB:-donastag}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  expert_system:
+    build: ./src/expert_system
+    restart: unless-stopped
+    ports:
+      - "8015:8000"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-donastag}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=${POSTGRES_DB:-donastag}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   studio:
     build: ./EID
     restart: unless-stopped
@@ -263,6 +335,10 @@ services:
       - JOURNAL_URL=http://journal:8000
       - SCORE_URL=http://score:8010
       - FITNESS_URL=http://fitness:8011
+      - ASSET_URL=http://asset_evolution:8012
+      - COLLAB_URL=http://collaboration:8013
+      - MARKETPLACE_URL=http://marketplace:8014
+      - EXPERT_URL=http://expert_system:8015
     depends_on:
       - director
       - ai_router
@@ -275,6 +351,10 @@ services:
       - journal
       - score
       - fitness
+      - asset_evolution
+      - collaboration
+      - marketplace
+      - expert_system
 
 volumes:
   postgres_data:
