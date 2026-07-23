@@ -53,3 +53,14 @@ See `VERSIONING.md` for the tag/rollback convention and `CHANGELOG.md` for histo
 Donastag kernel services live **only** on the Donastag Node. Project code
 (Electro.mart, DukaSmart, etc.) lives on its own separate node and talks to Donastag
 only over the network (API calls, webhooks) — never co-hosted, never shares this repo.
+
+## Node conventions
+
+- Hostname: `nice-node` for the Proxmox node.
+- CI: `.github/workflows/ci.yml` runs `pnpm build` and lint checks.
+- Coolify: deploy key or GitHub App with read access.
+
+## Staging
+
+- Contabo/staging is a future network segment.
+- For now, use Coolify preview environments if needed.
