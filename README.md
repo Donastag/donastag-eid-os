@@ -5,7 +5,7 @@ Z620 Proxmox VM), deployed via Coolify watching this repo's `main` branch.
 
 See `VERSIONING.md` for the tag/rollback convention and `CHANGELOG.md` for history.
 
-## Current phase: Phase 0 → Phase 2
+## Current phase: Phase 0 → Phase 3
 
 - [x] `docker-compose.yml` — Postgres, Redis, n8n baseline
 - [x] Capability Registry schema (`migrations/001_capability_registry.sql`)
@@ -13,6 +13,10 @@ See `VERSIONING.md` for the tag/rollback convention and `CHANGELOG.md` for histo
 - [x] Minimal Policy Engine
 - [x] Thin Telegram Concierge
 - [x] Thin Engineering Intelligence Director (Phase 2)
+- [x] Verification Engine + Studio page
+- [x] Security Engine + Studio page
+- [x] Monitoring service + Studio page
+- [x] Minimal CI workflow (`.github/workflows/ci.yml`)
 
 ## Setup
 
