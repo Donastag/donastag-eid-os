@@ -5,7 +5,7 @@ Z620 Proxmox VM), deployed via Coolify watching this repo's `main` branch.
 
 See `VERSIONING.md` for the tag/rollback convention and `CHANGELOG.md` for history.
 
-## Current phase: Phase 0 → Phase 5
+## Current phase: Phase 0 → Phase 7
 
 - [x] `docker-compose.yml` — Postgres, Redis, n8n baseline
 - [x] Capability Registry schema (`migrations/001_capability_registry.sql`)
@@ -28,6 +28,10 @@ See `VERSIONING.md` for the tag/rollback convention and `CHANGELOG.md` for histo
 - [x] Marketplace + Studio page
 - [x] Expert System + Studio page
 - [x] Telegram deep integration
+- [x] Operations page + backup/restore scripts
+- [x] Prometheus metrics exporter
+- [x] Alertmanager rules
+- [x] Healthcheck and readiness probes
 - [x] Studio full sidebar wiring
 
 ## Setup
@@ -64,3 +68,14 @@ only over the network (API calls, webhooks) — never co-hosted, never shares th
 
 - Contabo/staging is a future network segment.
 - For now, use Coolify preview environments if needed.
+
+## Healthchecks
+
+- Each Python service exposes `/health`.
+- The metrics exporter exposes `/metrics` on `8016`.
+- Coolify healthcheck uses `PATH /health` for each service.
+
+## Backup and restore
+
+- `scripts/backup.sh` writes a timestamped SQL dump under `backups/`.
+- `scripts/restore.sh <backup.sql.gz>` restores from a dated dump.

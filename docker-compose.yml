@@ -348,12 +348,12 @@ services:
       - KG_URL=http://kg:8000
       - WORKFLOW_URL=http://workflow:8000
       - JOURNAL_URL=http://journal:8000
-      - SCORE_URL=http://score:8010
-      - FITNESS_URL=http://fitness:8011
-      - ASSET_URL=http://asset_evolution:8012
-      - COLLAB_URL=http://collaboration:8013
-      - MARKETPLACE_URL=http://marketplace:8014
-      - EXPERT_URL=http://expert_system:8015
+      - SCORE_URL=http://score:8000
+      - FITNESS_URL=http://fitness:8000
+      - ASSET_URL=http://asset_evolution:8000
+      - COLLAB_URL=http://collaboration:8000
+      - MARKETPLACE_URL=http://marketplace:8000
+      - EXPERT_URL=http://expert_system:8000
       - METRICS_URL=http://monitoring_exporter:8016
     depends_on:
       - director

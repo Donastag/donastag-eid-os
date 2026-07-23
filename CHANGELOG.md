@@ -2,10 +2,13 @@
 
 ## v0.5.0-phase7 — 2026-07-23
 - Phase 7: production readiness.
-- Add backup/restore and migration runner.
-- Add healthcheck and readiness probes.
-- Add Prometheus metrics exporter.
-- Add alertmanager rules.
+- Add backup/restore scripts and migration runner.
+- Add Prometheus metrics exporter (`monitoring_exporter`, `8016`).
+- Add alertmanager rule file under `monitoring/alertmanager/rules.yml`.
+- Add `/ops` dashboard page and API health route.
+- Complete Studio sidebar wiring for all Phase 0–7 pages.
+- Expand README with Phase 7 checklist, healthchecks, backup/restore, and architecture boundary.
+- Add deploy-time healthchecks for core services in `docker-compose.yml`.
 
 ## v0.4.0-phase5 — 2026-07-23
 - Phase 5: Asset Evolution Engine, Collaboration Engine, Marketplace, Expert System.

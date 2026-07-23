@@ -1,0 +1,24 @@
+groups:
+  - name: donastag_alerts
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.instance }} is down"
+      - alert: HighInboxOpenItems
+        expr: engineering_inbox_items_total{status="open"} > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Inbox has {{ $value }} open items"
+      - alert: SecurityScansHigh
+        expr: sum(engineering_security_scans_total{severity="high"}) > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High severity security scans detected"
