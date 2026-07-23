@@ -1,68 +1,71 @@
 'use client'
 
-import { useState } from 'react'
-import { FileUploader } from '@/components/features/inbox/file-uploader'
-import { InboxQueue } from '@/components/features/inbox/inbox-queue'
-import { Inbox, Upload } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Loader2 } from 'lucide-react'
+
+interface InboxItem {
+  id: string
+  source: string
+  subject: string
+  body: string
+  status: string
+  metadata?: Record<string, any>
+  created_at?: string
+  updated_at?: string
+}
 
 export default function InboxPage() {
-  const [activeTab, setActiveTab] = useState<'upload' | 'queue'>('upload')
+  const [items, setItems] = useState<InboxItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch('/api/inbox/items')
+        if (!res.ok) throw new Error('Failed to load inbox')
+        const data = await res.json()
+        setItems(data.items || [])
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Unknown error')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="border-b border-white/8 px-6 py-4">
-        <div className="flex items-center gap-3 mb-2">
-          <Inbox className="w-5 h-5 text-accent-primary" />
-          <h1 className="text-xl font-semibold">Engineering Inbox</h1>
-        </div>
-        <p className="text-sm text-neutral-400">
-          Single intake point for repositories, files, PDFs, images, and more
-        </p>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-4 px-6 py-4 border-b border-white/8">
-        <button
-          onClick={() => setActiveTab('upload')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-            activeTab === 'upload'
-              ? 'bg-accent-primary/20 text-accent-primary'
-              : 'text-neutral-400 hover:text-foreground hover:bg-neutral-800/30'
-          }`}
-        >
-          <Upload className="w-4 h-4" />
-          Upload
-        </button>
-        <button
-          onClick={() => setActiveTab('queue')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-            activeTab === 'queue'
-              ? 'bg-accent-primary/20 text-accent-primary'
-              : 'text-neutral-400 hover:text-foreground hover:bg-neutral-800/30'
-          }`}
-        >
-          <Inbox className="w-4 h-4" />
-          Queue
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-auto p-6">
-        {activeTab === 'upload' && (
-          <div className="max-w-2xl">
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold mb-2">Add Content</h2>
-              <p className="text-sm text-neutral-400">
-                Drag and drop files, or click to select. Supported formats: PDF, images, code files, archives, and more.
-              </p>
-            </div>
-            <FileUploader onFileUploaded={() => setActiveTab('queue')} />
+    <main className="flex-1 overflow-auto bg-gradient-to-b from-neutral-950 to neutral-900/50">
+      <div className="px-8 py-8 space-y-6">
+        <h1 className="text-3xl font-bold text-white">Inbox</h1>
+        <p className="text-neutral-400 text-sm">Engineering intake and requests.</p>
+        {loading ? (
+          <div className="flex items-center gap-2 text-neutral-400">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Loading inbox...
+          </div>
+        ) : error ? (
+          <div className="text-red-400 text-sm">{error}</div>
+        ) : items.length === 0 ? (
+          <div className="surface-primary rounded-lg p-6 text-sm text-neutral-500">No inbox items yet.</div>
+        ) : (
+          <div className="space-y-4">
+            {items.map((item) => (
+              <div key={item.id} className="surface-primary rounded-lg divide-y divide-white/5">
+                <div className="p-4 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium text-white">{item.subject}</div>
+                    <div className="text-xs text-neutral-500">{item.source} • {item.created_at ? new Date(item.created_at).toLocaleString() : ''}</div>
+                  </div>
+                  <span className="text-xs text-neutral-400">{item.status}</span>
+                </div>
+                <div className="p-4 text-xs text-neutral-300 whitespace-pre-wrap">{item.body}</div>
+              </div>
+            ))}
           </div>
         )}
-
-        {activeTab === 'queue' && <InboxQueue />}
       </div>
-    </div>
+    </main>
   )
 }

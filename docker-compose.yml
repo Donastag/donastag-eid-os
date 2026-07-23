@@ -156,6 +156,96 @@ services:
       postgres:
         condition: service_healthy
 
+  inbox:
+    build: ./src/inbox
+    restart: unless-stopped
+    ports:
+      - "8006:8000"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-donastag}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=${POSTGRES_DB:-donastag}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  kg:
+    build: ./src/kg
+    restart: unless-stopped
+    ports:
+      - "8007:8000"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-donastag}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=${POSTGRES_DB:-donastag}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  workflow:
+    build: ./src/workflow
+    restart: unless-stopped
+    ports:
+      - "8008:8000"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-donastag}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=${POSTGRES_DB:-donastag}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  journal:
+    build: ./src/journal
+    restart: unless-stopped
+    ports:
+      - "8009:8000"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-donastag}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=${POSTGRES_DB:-donastag}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  score:
+    build: ./src/score
+    restart: unless-stopped
+    ports:
+      - "8010:8000"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-donastag}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=${POSTGRES_DB:-donastag}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  fitness:
+    build: ./src/fitness
+    restart: unless-stopped
+    ports:
+      - "8011:8000"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-donastag}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=${POSTGRES_DB:-donastag}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   studio:
     build: ./EID
     restart: unless-stopped
@@ -167,12 +257,24 @@ services:
       - VERIFICATION_URL=http://verification_engine:8000
       - SECURITY_URL=http://security_engine:8000
       - MONITORING_URL=http://monitoring:8000
+      - INBOX_URL=http://inbox:8000
+      - KG_URL=http://kg:8000
+      - WORKFLOW_URL=http://workflow:8000
+      - JOURNAL_URL=http://journal:8000
+      - SCORE_URL=http://score:8010
+      - FITNESS_URL=http://fitness:8011
     depends_on:
       - director
       - ai_router
       - verification_engine
       - security_engine
       - monitoring
+      - inbox
+      - kg
+      - workflow
+      - journal
+      - score
+      - fitness
 
 volumes:
   postgres_data:
