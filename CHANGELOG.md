@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.5.0-phase7 — 2026-07-23
+- Phase 7: production readiness.
+- Add backup/restore and migration runner.
+- Add healthcheck and readiness probes.
+- Add Prometheus metrics exporter.
+- Add alertmanager rules.
+
 ## v0.4.0-phase5 — 2026-07-23
 - Phase 5: Asset Evolution Engine, Collaboration Engine, Marketplace, Expert System.
 - Telegram deep integration with /status, /verify, /inbox commands.

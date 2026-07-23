@@ -168,6 +168,21 @@ services:
       postgres:
         condition: service_healthy
 
+  monitoring_exporter:
+    build: ./src/monitoring/exporter
+    restart: unless-stopped
+    ports:
+      - "8016:8000"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-donastag}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=${POSTGRES_DB:-donastag}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   inbox:
     build: ./src/inbox
     restart: unless-stopped
@@ -339,12 +354,14 @@ services:
       - COLLAB_URL=http://collaboration:8013
       - MARKETPLACE_URL=http://marketplace:8014
       - EXPERT_URL=http://expert_system:8015
+      - METRICS_URL=http://monitoring_exporter:8016
     depends_on:
       - director
       - ai_router
       - verification_engine
       - security_engine
       - monitoring
+      - monitoring_exporter
       - inbox
       - kg
       - workflow
