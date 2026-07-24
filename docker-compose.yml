@@ -89,7 +89,7 @@ services:
     restart: unless-stopped
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
-      - AI_ROUTER_URL=http://ai_router:8000
+      - DIRECTOR_URL=http://director:8000
       - VERIFICATION_URL=http://verification_engine:8000
       - SECURITY_URL=http://security_engine:8000
       - MONITORING_URL=http://monitoring:8000
@@ -97,7 +97,7 @@ services:
       - WORKFLOW_URL=http://workflow:8000
       - JOURNAL_URL=http://journal:8000
     depends_on:
-      - ai_router
+      - director
       - verification_engine
       - security_engine
       - monitoring

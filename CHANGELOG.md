@@ -9,6 +9,11 @@
 - Complete Studio sidebar wiring for all Phase 0–7 pages.
 - Expand README with Phase 7 checklist, healthchecks, backup/restore, and architecture boundary.
 - Add deploy-time healthchecks for core services in `docker-compose.yml`.
+- Add project intake & architecture module (`project_intake`, `8017`).
+- Fix orchestration wiring: Telegram Concierge now routes through Director before AI Router.
+- Policy engine enforcement active in live request path via `POST /direct`.
+- Remove bogus seed data; empty tables are genuinely empty and ready for live inputs.
+- Start n8n service and remove duplicate `docker-compose.yaml`.
 
 ## v0.4.0-phase5 — 2026-07-23
 - Phase 5: Asset Evolution Engine, Collaboration Engine, Marketplace, Expert System.

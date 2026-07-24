@@ -6,7 +6,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-AI_ROUTER_URL = os.getenv("AI_ROUTER_URL", "http://localhost:8001")
+DIRECTOR_URL = os.getenv("DIRECTOR_URL", "http://localhost:8002")
 VERIFICATION_URL = os.getenv("VERIFICATION_URL", "http://localhost:8003")
 SECURITY_URL = os.getenv("SECURITY_URL", "http://localhost:8004")
 MONITORING_URL = os.getenv("MONITORING_URL", "http://localhost:8005")
@@ -53,14 +53,19 @@ async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
             resp = await client.post(
-                f"{AI_ROUTER_URL}/v1/chat/completions",
+                f"{DIRECTOR_URL}/direct",
                 json={
-                    "model": "gpt-4o-mini",
-                    "messages": [{"role": "user", "content": text}],
+                    "prompt": text,
+                    "capability": "telegram_ask",
+                    "action": "ask",
+                    "metadata": {"user_id": str(update.message.from_user.id) if update.message.from_user else None},
                 },
             )
         data = resp.json()
-        content = data.get("choices", [{}])[0].get("message", {}).get("content", str(data))
+        if not data.get("allowed", False):
+            await update.message.reply_text(f"Request denied: {data.get('reason', 'policy violation')}")
+            return
+        content = data.get("response") or data.get("reason") or str(data)
         await update.message.reply_text(content)
     except Exception as e:
         logger.error(f"ask failed: {e}")
