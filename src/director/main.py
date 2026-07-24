@@ -124,18 +124,9 @@ async def route_request(prompt: str, capability: Optional[str], action: Optional
     return result
 
 
-@app.post("/direct")
-async def direct(request: DirectorRequest):
+@app.post("/orchestrate")
+async def orchestrate(request: DirectorRequest):
     result = await route_request(request.prompt, request.capability, request.action)
-    await persist_request(
-        source="director",
-        capability=result.get("capability"),
-        action=result.get("action"),
-        prompt=request.prompt,
-        allowed=result.get("allowed", False),
-        reason=result.get("reason"),
-        response=result.get("response"),
-    )
     return result
 
 

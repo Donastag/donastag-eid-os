@@ -53,7 +53,7 @@ async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
             resp = await client.post(
-                f"{DIRECTOR_URL}/direct",
+                f"{DIRECTOR_URL}/orchestrate",
                 json={
                     "prompt": text,
                     "capability": "telegram_ask",
