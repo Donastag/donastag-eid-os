@@ -24,6 +24,7 @@ import {
   Inbox,
   Users,
   Activity,
+  Lightbulb,
 } from 'lucide-react'
 
 interface MenuItem {
@@ -100,6 +101,7 @@ const menuItems: MenuItem[] = [
   },
   { id: 'settings', label: 'Settings', icon: <Settings className="w-4 h-4" />, path: '/settings' },
   { id: 'telegram', label: 'Telegram', icon: <MessageCircle className="w-4 h-4" />, path: '/telegram' },
+  { id: 'project-intake', label: 'Project Intake', icon: <Lightbulb className="w-4 h-4" />, path: '/project-intake' },
 ]
 
 export function Sidebar() {
