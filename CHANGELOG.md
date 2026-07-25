@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.6.0-eid-orchestration-confirmed — 2026-07-24
+- Director orchestration chain verified end-to-end with working policy gate.
+- Telegram Concierge now routes through Director (`POST /orchestrate`) before AI Router.
+- Policy Engine enforcement confirmed live: flipped `policy_rules.requires_human_approval` to `true` for `default/default`, sent test request, confirmed `allowed=false` with reason returned and **no** call to AI Router.
+- Acceptance test reproducible: see `src/director/main.py` `route_request()` — policy query happens before `httpx` call to AI Router, and `requires_human_approval=true` short-circuits the call.
+- Renamed Director endpoint from `/direct` to `/orchestration` to reflect actual behavior.
+- Removed duplicate request persistence in Director endpoint handler.
+
 ## v0.5.0-phase7 — 2026-07-23
 - Phase 7: production readiness.
 - Add backup/restore scripts and migration runner.
