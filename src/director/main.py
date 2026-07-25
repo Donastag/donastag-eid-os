@@ -31,6 +31,7 @@ class DirectorRequest(BaseModel):
     capability: Optional[str] = None
     action: Optional[str] = None
     prompt: str
+    owner_project: Optional[str] = None
     metadata: Optional[dict[str, Any]] = None
 
 
@@ -41,14 +42,23 @@ class ProjectCreate(BaseModel):
     metadata: Optional[dict[str, Any]] = None
 
 
-async def get_policy(capability: str, action: str) -> dict[str, Any]:
+async def get_policy(capability: str, action: str, owner_project: Optional[str] = None) -> dict[str, Any]:
     conn = await asyncpg.connect(PG_DSN)
     try:
-        row = await conn.fetchrow(
-            "SELECT requires_human_approval, reason FROM policy_rules WHERE capability=$1 AND action=$2",
-            capability,
-            action,
-        )
+        row = None
+        if owner_project:
+            row = await conn.fetchrow(
+                "SELECT requires_human_approval, reason FROM policy_rules WHERE capability=$1 AND action=$2 AND owner_project=$3",
+                capability,
+                action,
+                owner_project,
+            )
+        if not row:
+            row = await conn.fetchrow(
+                "SELECT requires_human_approval, reason FROM policy_rules WHERE capability=$1 AND action=$2 AND owner_project IS NULL",
+                capability,
+                action,
+            )
         if row:
             return {"requires_human_approval": row["requires_human_approval"], "reason": row["reason"]}
         return {"requires_human_approval": True, "reason": "No explicit policy rule found"}
@@ -79,13 +89,14 @@ async def persist_request(*, source: str, capability: Optional[str], action: Opt
         await conn.close()
 
 
-async def route_request(prompt: str, capability: Optional[str], action: Optional[str]) -> dict[str, Any]:
+async def route_request(prompt: str, capability: Optional[str], action: Optional[str], owner_project: Optional[str] = None) -> dict[str, Any]:
     capability = capability or "default"
     action = action or "default"
-    policy = await get_policy(capability, action)
+    policy = await get_policy(capability, action, owner_project)
     result: dict[str, Any] = {
         "capability": capability,
         "action": action,
+        "owner_project": owner_project,
         "allowed": False,
         "reason": policy.get("reason"),
         "response": None,
@@ -105,6 +116,7 @@ async def route_request(prompt: str, capability: Optional[str], action: Optional
             result = {
                 "capability": capability,
                 "action": action,
+                "owner_project": owner_project,
                 "allowed": True,
                 "reason": policy.get("reason"),
                 "response": data.get("choices", [{}])[0].get("message", {}).get("content"),
@@ -126,7 +138,7 @@ async def route_request(prompt: str, capability: Optional[str], action: Optional
 
 @app.post("/orchestrate")
 async def orchestrate(request: DirectorRequest):
-    result = await route_request(request.prompt, request.capability, request.action)
+    result = await route_request(request.prompt, request.capability, request.action, request.owner_project)
     return result
 
 

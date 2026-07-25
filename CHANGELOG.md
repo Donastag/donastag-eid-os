@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.6.1-policy-scoping — 2026-07-25
+- Add `owner_project` scoping to `policy_rules` via migration 018.
+- Director `get_policy()` now queries in priority order: exact scoped match → general rule (owner_project IS NULL) → fail-closed default.
+- `DirectorRequest` accepts optional `owner_project`; `/orchestrate` passes it through.
+- Verified: `electromart.check_stock/read` with `owner_project=electromart` returns `allowed=true`; `electromart.delete_order/write` with same project returns `allowed=false`.
+- Unique index on `(capability, action, COALESCE(owner_project, ''))` prevents duplicate scoped rules.
+
 ## v0.6.0-eid-orchestration-confirmed — 2026-07-24
 - Director orchestration chain verified end-to-end with working policy gate.
 - Telegram Concierge now routes through Director (`POST /orchestrate`) before AI Router.
