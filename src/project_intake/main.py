@@ -90,14 +90,17 @@ async def generate_plan(intake_id: str):
         )
         available_components = [dict(c) for c in components]
 
+        valid_names = [c["name"] for c in available_components]
         prompt = (
-            "You are a software architect. Generate a project proposal based on the following intake.\n"
+            "You are a software architect. Generate a project proposal based on the following intake.\n\n"
+            "AVAILABLE STACK COMPONENTS (you may ONLY choose from this exact list, do not suggest anything not on it):\n"
+            f"{json.dumps(valid_names)}\n\n"
             f"Project: {intake_row['name']}\n"
             f"Description: {intake_row['description']}\n"
             f"Requirements: {json.dumps(intake_row['requirements'])}\n"
             f"Constraints: {json.dumps(intake_row['constraints'])}\n"
-            f"Timeline weeks: {intake_row['timeline_weeks']}\n"
-            f"Available stack components (must only recommend from this list): {json.dumps(available_components)}\n\n"
+            f"Timeline weeks: {intake_row['timeline_weeks']}\n\n"
+            "IMPORTANT: Every value in tech_recommendations MUST be one of the exact names from the AVAILABLE STACK COMPONENTS list above. Do not invent or substitute alternatives.\n\n"
             "Return valid JSON with keys: phases (list of {name, weeks, tasks}), "
             "tech_recommendations (dict), risks (list of strings)."
         )
@@ -122,6 +125,7 @@ async def generate_plan(intake_id: str):
             "phases": [],
             "tech_recommendations": {},
             "risks": [],
+            "stack_validation": {"valid": True, "unrecognized": []},
         }
         try:
             cleaned = response_text.strip()
@@ -132,6 +136,15 @@ async def generate_plan(intake_id: str):
             plan_payload["phases"] = parsed.get("phases", [])
             plan_payload["tech_recommendations"] = parsed.get("tech_recommendations", {})
             plan_payload["risks"] = parsed.get("risks", [])
+
+            recommended_values = [v for v in plan_payload["tech_recommendations"].values() if isinstance(v, str)]
+            valid_names_set = set(valid_names)
+            unrecognized = [v for v in recommended_values if v not in valid_names_set]
+            if unrecognized:
+                plan_payload["stack_validation"] = {
+                    "valid": False,
+                    "unrecognized": unrecognized,
+                }
         except (json.JSONDecodeError, TypeError):
             pass
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.7.2-stack-validation — 2026-07-27
+- Add code-level stack recommendation validation to project_intake plan generation.
+- Prompt now repeats the available components list as a hard constraint twice.
+- After parsing AI response, validate all `tech_recommendations` values against registered `capabilities` (`type='oss_stack_component'`).
+- Unrecognized recommendations are flagged in `architectural_plan.stack_validation.unrecognized` rather than rejecting the whole plan.
+- Cleaned JSON parsing strips markdown code blocks before `json.loads()`.
+- Verified: Electro.mart plan now recommends only registered components (`fastapi`, `postgresql`, `nextjs`, `react`, `stripe`, `paystack`, etc.) with `stack_validation.valid=true`.
+
 ## v0.7.1-project-intake-director — 2026-07-27
 - Replace project_intake's hardcoded plan generator with Director-driven, Capability-Registry-constrained proposal.
 - `POST /intakes/{id}/plan` now queries `capabilities` for `oss_stack_component` entries, builds a constrained prompt, and calls Director's `/orchestrate` endpoint.
