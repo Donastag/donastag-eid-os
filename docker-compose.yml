@@ -194,9 +194,12 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-donastag}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
+      - DIRECTOR_URL=http://director:8000
     depends_on:
       postgres:
         condition: service_healthy
+      director:
+        condition: service_started
 
   inbox:
     build: ./src/inbox

@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.7.1-project-intake-director — 2026-07-27
+- Replace project_intake's hardcoded plan generator with Director-driven, Capability-Registry-constrained proposal.
+- `POST /intakes/{id}/plan` now queries `capabilities` for `oss_stack_component` entries, builds a constrained prompt, and calls Director's `/orchestrate` endpoint.
+- Added approval gate: `POST /intakes/{id}/approve` and `POST /intakes/{id}/reject` with execution_notes history.
+- Added policy rule `project_intake.generate_plan/write` (owner_project=NULL) so plan generation is auto-allowed; human approval is explicit via `/approve`.
+- Verified: Electro.mart intake plan is AI-generated and project-specific; Director requests log confirms routing through Policy Engine; approval flow sets status to `approved`.
+
+## v0.7.0-policy-project-scoping — 2026-07-25
+- Add `owner_project` scoping to `policy_rules` via migration 018.
+- Director `get_policy()` now queries in priority order: exact scoped match → general rule (owner_project IS NULL) → fail-closed default.
+- `DirectorRequest` accepts optional `owner_project`; `/orchestrate` passes it through.
+- Verified: `electromart.check_stock/read` with `owner_project=electromart` returns `allowed=true`; `electromart.delete_order/write` with same project returns `allowed=false`.
+- Unique index on `(capability, action, COALESCE(owner_project, ''))` prevents duplicate scoped rules.
+
 ## v0.6.1-policy-scoping — 2026-07-25
 - Add `owner_project` scoping to `policy_rules` via migration 018.
 - Director `get_policy()` now queries in priority order: exact scoped match → general rule (owner_project IS NULL) → fail-closed default.
