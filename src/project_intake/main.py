@@ -37,6 +37,15 @@ class ApproveReject(BaseModel):
     reason: str | None = None
 
 
+class CapabilityConstraint(BaseModel):
+    capability_name: str
+    constraint_type: str
+    detail: str
+    affected_version: str | None = None
+    severity: str = "warning"
+    learned_from_project: str | None = None
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "project_intake"}
@@ -90,17 +99,37 @@ async def generate_plan(intake_id: str):
         )
         available_components = [dict(c) for c in components]
 
+        constraint_rows = await conn.fetch(
+            """
+            SELECT cc.capability_name, cc.constraint_type, cc.detail, cc.affected_version, cc.severity
+            FROM capability_constraints cc
+            WHERE cc.capability_name IN (
+                SELECT name FROM capabilities WHERE type = 'oss_stack_component' AND status = 'active'
+            )
+            """
+        )
+        constraints = [dict(r) for r in constraint_rows]
+
         valid_names = [c["name"] for c in available_components]
         prompt = (
             "You are a software architect. Generate a project proposal based on the following intake.\n\n"
             "AVAILABLE STACK COMPONENTS (you may ONLY choose from this exact list, do not suggest anything not on it):\n"
             f"{json.dumps(valid_names)}\n\n"
+        )
+        if constraints:
+            prompt += "KNOWN ISSUES AND CONSTRAINTS (you MUST respect these when recommending a stack):\n"
+            for c in constraints:
+                severity = c.get("severity", "warning").upper()
+                version = f" ({c['affected_version']})" if c.get("affected_version") else ""
+                prompt += f"- {c['capability_name']}: [{severity}] {c['detail']}{version}\n"
+            prompt += "\n"
+            prompt += "IMPORTANT: Every value in tech_recommendations MUST be one of the exact names from the AVAILABLE STACK COMPONENTS list above. Do not invent or substitute alternatives.\n\n"
+        prompt += (
             f"Project: {intake_row['name']}\n"
             f"Description: {intake_row['description']}\n"
             f"Requirements: {json.dumps(intake_row['requirements'])}\n"
             f"Constraints: {json.dumps(intake_row['constraints'])}\n"
             f"Timeline weeks: {intake_row['timeline_weeks']}\n\n"
-            "IMPORTANT: Every value in tech_recommendations MUST be one of the exact names from the AVAILABLE STACK COMPONENTS list above. Do not invent or substitute alternatives.\n\n"
             "Return valid JSON with keys: phases (list of {name, weeks, tasks}), "
             "tech_recommendations (dict), risks (list of strings)."
         )
@@ -140,11 +169,25 @@ async def generate_plan(intake_id: str):
             recommended_values = [v for v in plan_payload["tech_recommendations"].values() if isinstance(v, str)]
             valid_names_set = set(valid_names)
             unrecognized = [v for v in recommended_values if v not in valid_names_set]
-            if unrecognized:
-                plan_payload["stack_validation"] = {
-                    "valid": False,
-                    "unrecognized": unrecognized,
-                }
+            stack_validation = {
+                "valid": not unrecognized,
+                "unrecognized": unrecognized,
+                "constraint_violations": [],
+            }
+            if constraints:
+                constraints_by_capability = {}
+                for c in constraints:
+                    constraints_by_capability.setdefault(c["capability_name"], []).append(c)
+                for value in recommended_values:
+                    for constraint in constraints_by_capability.get(value, []):
+                        if constraint.get("severity") == "blocker":
+                            stack_validation["constraint_violations"].append({
+                                "capability": value,
+                                "issue": constraint["detail"],
+                                "affected_version": constraint.get("affected_version"),
+                            })
+                            stack_validation["valid"] = False
+            plan_payload["stack_validation"] = stack_validation
         except (json.JSONDecodeError, TypeError):
             pass
 
@@ -237,6 +280,35 @@ async def list_lessons(project_id: str | None = None, limit: int = 50):
             rows = await conn.fetch("SELECT * FROM project_lessons WHERE project_id = $1 ORDER BY created_at DESC LIMIT $2", project_id, limit)
         else:
             rows = await conn.fetch("SELECT * FROM project_lessons ORDER BY created_at DESC LIMIT $1", limit)
+        return [dict(r) for r in rows]
+    finally:
+        await conn.close()
+
+
+@app.post("/constraints")
+async def create_constraint(constraint: CapabilityConstraint):
+    conn = await asyncpg.connect(DATABASE_URL)
+    try:
+        row = await conn.fetchrow(
+            "INSERT INTO capability_constraints (capability_name, constraint_type, detail, affected_version, severity, learned_from_project) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+            constraint.capability_name, constraint.constraint_type, constraint.detail, constraint.affected_version, constraint.severity, constraint.learned_from_project
+        )
+        return dict(row)
+    finally:
+        await conn.close()
+
+
+@app.get("/constraints")
+async def list_constraints(capability_name: str | None = None, limit: int = 100):
+    conn = await asyncpg.connect(DATABASE_URL)
+    try:
+        if capability_name:
+            rows = await conn.fetch(
+                "SELECT * FROM capability_constraints WHERE capability_name = $1 ORDER BY created_at DESC LIMIT $2",
+                capability_name, limit
+            )
+        else:
+            rows = await conn.fetch("SELECT * FROM capability_constraints ORDER BY created_at DESC LIMIT $1", limit)
         return [dict(r) for r in rows]
     finally:
         await conn.close()

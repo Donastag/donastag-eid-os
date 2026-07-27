@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.7.3-capability-constraints — 2026-07-27
+- Add `capability_constraints` table with migration 019 for structured version/compatibility knowledge.
+- Add `POST /constraints` and `GET /constraints?capability_name=X` endpoints to project_intake.
+- Wire constraints into `generate_plan()`: prompt now includes known issues/constraints before requesting JSON.
+- Add second validation pass: blocker-level constraints on recommended capabilities are flagged in `stack_validation.constraint_violations`.
+- Verified: seaweedfs blocker constraint stored; Electro.mart plan respects it by excluding seaweedfs from recommendations; `stack_validation.valid=true`, `constraint_violations=[]`.
+
 ## v0.7.2-stack-validation — 2026-07-27
 - Add code-level stack recommendation validation to project_intake plan generation.
 - Prompt now repeats the available components list as a hard constraint twice.
