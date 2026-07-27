@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { BarChart3, Zap, GitBranch, AlertCircle, Clock, TrendingUp, Users, CheckCircle, FolderOpen } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { getDirectorProjects, type DirectorProject } from '@/lib/director/client'
+import { FloatingChat } from '@/components/features/floating-chat'
 
 interface Widget {
   id: string
@@ -213,6 +214,8 @@ export function MainWorkspace() {
           </div>
         </div>
       </div>
+
+      <FloatingChat />
     </main>
   )
 }
